@@ -27,7 +27,13 @@ export default function Page() {
       fetch("/api/settings/get").then(async (r) => {
         const s = await r.json();
         if (!s?.domain) {
-          window.location.href = `/api/shopify/auth?shop=${encodeURIComponent(shop)}`;
+          const authUrl = `/api/shopify/auth?shop=${encodeURIComponent(shop)}`;
+          // If embedded in Shopify admin iframe, break out to top-level
+          if (window.top && window.top !== window.self) {
+            window.top.location.href = authUrl;
+          } else {
+            window.location.href = authUrl;
+          }
         }
       }).catch(() => {});
     }
@@ -52,6 +58,12 @@ export default function Page() {
 
       <div className="card">
         <h2>Jobs</h2>
+        <p className="muted">If you see no shop installed, click Install below to authorize.</p>
+        <div style={{ marginBottom: 8 }}>
+          <a
+            href={typeof window !== "undefined" ? `/api/shopify/auth?shop=${encodeURIComponent(new URL(window.location.href).searchParams.get("shop") || "")}` : "#"}
+          >Install app</a>
+        </div>
         <table>
           <thead>
             <tr>

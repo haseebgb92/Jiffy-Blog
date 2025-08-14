@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     scopes: (process.env.SHOPIFY_SCOPES || "").split(","),
     hostName: new URL(process.env.SHOPIFY_APP_URL || "https://example.com").host,
     apiVersion: (process.env.SHOPIFY_API_VERSION as any) || LATEST_API_VERSION,
-    isCustomStoreApp: false,
+    isCustomStoreApp: true,
     isEmbeddedApp: false,
   });
 
