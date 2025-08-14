@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       scope: process.env.SHOPIFY_SCOPES || "",
       redirect_uri: redirectUri,
       state: Math.random().toString(36).slice(2),
-      access_mode: "offline",
+      response_type: "code",
     });
     const manualUrl = `https://${shop}/admin/oauth/authorize?${params.toString()}`;
     if (debug) {
