@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing shop" }, { status: 400 });
   }
 
+  if (!process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
+    return NextResponse.json({ error: "Missing SHOPIFY_API_KEY or SHOPIFY_API_SECRET" }, { status: 500 });
+  }
+
   const shopify = shopifyApi({
     apiKey: process.env.SHOPIFY_API_KEY || "",
     apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
@@ -26,36 +30,46 @@ export async function GET(req: NextRequest) {
   });
 
   if (!code) {
-    const rawRequest: any = {
-      headers: Object.fromEntries(req.headers as any),
-      url: req.url,
-      method: "GET",
-    };
-    const rawResponse: any = {
-      setHeader: () => {},
-      statusCode: 302,
-    };
-    const authRoute = await (shopify as any).auth.begin({
+    try {
+      const rawRequest: any = {
+        headers: Object.fromEntries(req.headers as any),
+        url: req.url,
+        method: "GET",
+      };
+      const rawResponse: any = {
+        setHeader: () => {},
+        statusCode: 302,
+      };
+      const authRoute = await (shopify as any).auth.begin({
+        shop,
+        callbackPath: "/api/shopify/auth",
+        isOnline: false,
+        rawRequest,
+        rawResponse,
+      });
+      return NextResponse.redirect(authRoute as string);
+    } catch (e: any) {
+      return new Response(`OAuth start error: ${e?.message || e}`, { status: 500 });
+    }
+  }
+
+  let accessToken: string;
+  try {
+    const res = await (shopify as any).auth.callback({
       shop,
       callbackPath: "/api/shopify/auth",
       isOnline: false,
-      rawRequest,
-      rawResponse,
+      code,
+      rawRequest: {
+        headers: Object.fromEntries(req.headers as any),
+        url: req.url,
+        method: "GET",
+      },
     });
-    return NextResponse.redirect(authRoute);
+    accessToken = res.accessToken;
+  } catch (e: any) {
+    return new Response(`OAuth callback error: ${e?.message || e}`, { status: 500 });
   }
-
-  const { accessToken } = await (shopify as any).auth.callback({
-    shop,
-    callbackPath: "/api/shopify/auth",
-    isOnline: false,
-    code,
-    rawRequest: {
-      headers: Object.fromEntries(req.headers as any),
-      url: req.url,
-      method: "GET",
-    },
-  });
 
   await prisma.shop.upsert({
     where: { id: shop },
