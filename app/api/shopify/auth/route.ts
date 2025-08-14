@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const shop = searchParams.get("shop");
+  const shop = searchParams.get("shop") || searchParams.get("shopDomain");
   const code = searchParams.get("code");
 
   if (!shop) {
@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
     create: { id: shop, domain: shop, accessToken },
   });
 
-  return NextResponse.redirect(new URL("/", process.env.SHOPIFY_APP_URL || req.url));
+  const base = process.env.SHOPIFY_APP_URL || `${new URL(req.url).origin}`;
+  return NextResponse.redirect(new URL(`/?installed=1&shop=${encodeURIComponent(shop)}`, base));
 }
 
 

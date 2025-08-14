@@ -20,6 +20,17 @@ export default function Page() {
 
   useEffect(() => {
     loadJobs();
+    const url = new URL(window.location.href);
+    const shop = url.searchParams.get("shop");
+    if (shop) {
+      // If not installed yet, bounce to OAuth start.
+      fetch("/api/settings/get").then(async (r) => {
+        const s = await r.json();
+        if (!s?.domain) {
+          window.location.href = `/api/shopify/auth?shop=${encodeURIComponent(shop)}`;
+        }
+      }).catch(() => {});
+    }
   }, []);
 
   async function action(path: string) {
