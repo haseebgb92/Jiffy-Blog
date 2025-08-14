@@ -1,0 +1,61 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Shop {
+  id          String    @id
+  domain      String    @unique
+  accessToken String
+  provider    Provider  @default(GEMINI)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Templates   Template[]
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  shopId         String
+  shop           Shop     @relation(fields: [shopId], references: [id])
+  name           String
+  templateSuffix String
+  style          String
+  createdAt      DateTime @default(now())
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  shopId        String
+  keyword       String
+  intent        String?
+  targetBlogId  String?
+  templateId    String?
+  status        JobStatus @default(PENDING)
+  publishAt     DateTime?
+  outlineJson   Json?
+  draftHtml     String?
+  heroImageUrl  String?
+  error         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Provider {
+  GEMINI
+  OPENAI
+}
+
+enum JobStatus {
+  PENDING
+  DRAFTED
+  NEEDS_APPROVAL
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+
