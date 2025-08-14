@@ -26,19 +26,35 @@ export async function GET(req: NextRequest) {
   }
 
   if (!code) {
-    const authRoute = await shopify.auth.begin({
+    const rawRequest: any = {
+      headers: Object.fromEntries(req.headers as any),
+      url: req.url,
+      method: "GET",
+    };
+    const rawResponse: any = {
+      setHeader: () => {},
+      statusCode: 302,
+    };
+    const authRoute = await (shopify as any).auth.begin({
       shop,
       callbackPath: "/api/shopify/auth",
       isOnline: false,
+      rawRequest,
+      rawResponse,
     });
     return NextResponse.redirect(authRoute);
   }
 
-  const { accessToken } = await shopify.auth.callback({
+  const { accessToken } = await (shopify as any).auth.callback({
     shop,
     callbackPath: "/api/shopify/auth",
     isOnline: false,
     code,
+    rawRequest: {
+      headers: Object.fromEntries(req.headers as any),
+      url: req.url,
+      method: "GET",
+    },
   });
 
   await prisma.shop.upsert({
