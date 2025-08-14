@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shop = searchParams.get("shop") || searchParams.get("shopDomain");
   const code = searchParams.get("code");
+  const debug = searchParams.get("debug");
 
   if (!shop) {
     return NextResponse.json({ error: "Missing shop" }, { status: 400 });
@@ -47,9 +48,30 @@ export async function GET(req: NextRequest) {
         rawRequest,
         rawResponse,
       });
-      return NextResponse.redirect(authRoute as string);
+      if (debug) {
+        return NextResponse.json({
+          ok: true,
+          beginUrl: String(authRoute),
+          hostName: new URL(process.env.SHOPIFY_APP_URL || "https://example.com").host,
+          scopes: (process.env.SHOPIFY_SCOPES || "").split(","),
+        });
+      }
+      return NextResponse.redirect(String(authRoute));
     } catch (e: any) {
-      return new Response(`OAuth start error: ${e?.message || e}`, { status: 500 });
+      // Fallback manual start URL
+      const redirectUri = `${new URL(process.env.SHOPIFY_APP_URL || req.url).origin}/api/shopify/auth`;
+      const params = new URLSearchParams({
+        client_id: process.env.SHOPIFY_API_KEY || "",
+        scope: process.env.SHOPIFY_SCOPES || "",
+        redirect_uri: redirectUri,
+        state: Math.random().toString(36).slice(2),
+        access_mode: "offline",
+      });
+      const manualUrl = `https://${shop}/admin/oauth/authorize?${params.toString()}`;
+      if (debug) {
+        return NextResponse.json({ ok: false, error: `OAuth start error: ${e?.message || e}`, manualUrl });
+      }
+      return NextResponse.redirect(manualUrl);
     }
   }
 
