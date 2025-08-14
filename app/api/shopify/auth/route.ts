@@ -13,6 +13,7 @@ const shopify = shopifyApi({
   hostName: new URL(process.env.SHOPIFY_APP_URL || "https://example.com").host,
   apiVersion: (process.env.SHOPIFY_API_VERSION as any) || LATEST_API_VERSION,
   isCustomStoreApp: true,
+  isEmbeddedApp: false,
 });
 
 export async function GET(req: NextRequest) {
